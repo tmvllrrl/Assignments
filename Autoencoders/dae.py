@@ -47,6 +47,19 @@ class DenoisingAutoEncoder(pl.LightningModule):
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
         return optimizer
 
+def add_noise(input_data):
+    input_data = input_data.numpy()
+
+    # Mean and standard deviation of the noise to be added
+    mean , std = 0.0, 0.15 
+    noise = np.random.normal(mean, std, size = input_data.shape)
+    
+    # Clip data so that it does not violate normalization ranges
+    noisy_data = np.clip(input_data + noise, 0., 1.) 
+    
+    noisy_data = torch.from_numpy(noisy_data)
+    return noisy_data
+
 def train_dae(dae, train_loader):
     # Defines what model checkpoint to save during training
     dae_ckpt_callback = ModelCheckpoint(
