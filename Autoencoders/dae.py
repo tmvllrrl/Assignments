@@ -14,31 +14,35 @@ import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
 from pytorch_lightning.callbacks import ModelCheckpoint
 
-class AutoEncoder(pl.LightningModule):
+class DenoisingAutoEncoder(pl.LightningModule):
     def __init__(self):
         super().__init__(encoder, decoder)
-        
         self.encoder = encoder
         self.decoder = decoder
-    
-    # In PyTorch Lightning, you define the behavior for each training step by overriding this method
-    def training_step(self, batch, batch_idx):
-        x, y = batch # x is the image batch, and y is the label batch. Is y necessary to use?
         
-        z = self.encoder(x) # z is the latent representation discussed in the lecture
+    def forward(self, x):
+        return self.decoder(self.encoder(x))
+
+    def training_step(self, batch, batch_idx):
+        x, y = batch
+        
+        noise_x = torch.tensor(x) # Making a copy of x and labelling it noise_x
+        
+        for i, ind_x in enumerate(x):
+            noise_x[i] = add_noise(ind_x) # Using add_noise function to create and add noisy images to batch
+        
+        z = self.encoder(noise_x) # z is the latent representation discussed in the lecture
         x_hat = self.decoder(z) # x_hat is the reconstructed image
         
         loss = F.mse_loss(x_hat, x)
         
-        self.log("loss", loss) # This is used later for saving the best model
+        self.log("loss", loss)
         return loss
     
-    # This results in the epoch loss being printed out at the end of an epoch. This is a utility func from PyTorch Lightning
     def training_epoch_end(self, outputs):
         loss = sum(output['loss'] for output in outputs) / len(outputs)
         print(f"\nEPOCH TRAIN LOSS: {loss}")
 
-    # In Keras, the optimizer is given in the .compile() function; however, in PyTorch Lightning, the optimizer is defined here
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
         return optimizer
