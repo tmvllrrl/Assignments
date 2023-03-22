@@ -14,6 +14,8 @@ import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
 from pytorch_lightning.callbacks import ModelCheckpoint
 
+seed_everything(42, workers=True)
+
 class DenoisingAutoEncoder(pl.LightningModule):
     def __init__(self, encoder, decoder):
         super().__init__()
